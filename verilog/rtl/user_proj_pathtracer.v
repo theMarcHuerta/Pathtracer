@@ -78,9 +78,9 @@ module user_proj_pathtracer #(
     assign io_out[0] = inputChannel_rdy;
     assign io_out[8:1] = output_pxl_dat;
     assign io_out[9] = output_pxl_rdy;
-    assign io_in[21:10] = output_pxl_rdy;
-    assign io_in[22] = inputChannel_vld;
-    assign io_in[23] = output_pxl_vld;
+    assign inputChannel_dat = io_in[21:10];
+    assign inputChannel_vld = io_in[22];
+    assign output_pxl_vld = io_in[23];
 
     assign io_oeb[9:0] = 10'b1111111111;
     assign io_oeb[23:10] = 14'd0;
