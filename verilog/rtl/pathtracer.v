@@ -1,137 +1,3 @@
-// SPDX-FileCopyrightText: 2020 Efabless Corporation
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-// SPDX-License-Identifier: Apache-2.0
-
-`default_nettype none
-/*
- *-------------------------------------------------------------
- *
- * user_proj_example
- *
- * This is an example of a (trivially simple) user project,
- * showing how the user project can connect to the logic
- * analyzer, the wishbone bus, and the I/O pads.
- *
- * This project generates an integer count, which is output
- * on the user area GPIO pads (digital output only).  The
- * wishbone connection allows the project to be controlled
- * (start and stop) from the management SoC program.
- *
- * See the testbenches in directory "mprj_counter" for the
- * example programs that drive this user project.  The three
- * testbenches are "io_ports", "la_test1", and "la_test2".
- *
- *-------------------------------------------------------------
- */
-
-
-module user_proj_example #(
-    parameter BITS = 24  // This will be dependent on the internal data paths of your Pathtracer
-)(
-    // Wishbone Slave ports (WB MI A)
-    input wb_clk_i,
-    input wb_rst_i,
-    input wbs_stb_i,
-    input wbs_cyc_i,
-    input wbs_we_i,
-    input [3:0] wbs_sel_i,
-    input [31:0] wbs_dat_i,
-    input [31:0] wbs_adr_i,
-    output reg wbs_ack_o,
-    output reg [31:0] wbs_dat_o,
-
-    // Logic Analyzer Signals (not used in this example)
-    input  [127:0] la_data_in,
-    output [127:0] la_data_out,
-    input  [127:0] la_oenb
-);
-
-    // Internal signals
-    wire [11:0] inputChannel_dat;
-    reg [11:0] inputChannel_dat_tmp;
-    wire inputChannel_vld;
-    reg inputChannel_vld_tmp;
-    wire inputChannel_rdy;
-
-    wire [23:0] output_pxl_dat;
-    wire output_pxl_vld;
-    reg output_pxl_vld_tmp;
-    wire output_pxl_rdy;
-
-    // Instantiate Pathtracer
-    Pathtracer pathtracer_inst (
-        .clk(wb_clk_i),
-        .arst_n(~wb_rst_i),
-        .inputChannel_rsc_dat(inputChannel_dat),
-        .inputChannel_rsc_vld(inputChannel_vld),
-        .inputChannel_rsc_rdy(inputChannel_rdy),
-        .output_pxl_serial_rsc_dat(output_pxl_dat),
-        .output_pxl_serial_rsc_vld(output_pxl_vld),
-        .output_pxl_serial_rsc_rdy(output_pxl_rdy)
-    );
-
-    // Wishbone interface logic
-    always @(posedge wb_clk_i) begin
-        if (wb_rst_i) begin
-            wbs_ack_o <= 0;
-            inputChannel_vld_tmp <= 0;
-            output_pxl_vld_tmp <= 0;
-        end else begin
-            wbs_ack_o <= 0;  // Default to not acknowledging
-            if (wbs_cyc_i && wbs_stb_i) begin  // Wishbone cycle valid and strobe
-                wbs_ack_o <= 1;  // Acknowledge the Wishbone transaction
-                if (wbs_we_i) begin  // Wishbone write operation
-                    case (wbs_adr_i)
-                        32'h0000_0000: begin
-                            inputChannel_dat_tmp <= wbs_dat_i[11:0];
-                            inputChannel_vld_tmp <= 1;
-                        end
-                        32'h0000_0004: begin
-                            output_pxl_vld_tmp <= 1;  // Example control signal to Pathtracer
-                        end
-                        default: begin
-                            inputChannel_vld_tmp <= 0;  // Ensure vld is reset if not actively set
-                            output_pxl_vld_tmp <= 0;  // Reset output vld as well
-                        end
-                    endcase
-                end else begin  // Wishbone read operation
-                    case (wbs_adr_i)
-                        32'h0000_0008: begin
-                            wbs_dat_o <= {8'b0, output_pxl_dat};  // Return 24-bit data left-justified
-                        end
-                    endcase
-                end
-            end else begin
-                inputChannel_vld_tmp <= 0;  // Reset valid flags when not in a valid cycle
-                output_pxl_vld_tmp <= 0;
-            end
-        end
-    end
-
-    assign inputChannel_dat = inputChannel_dat_tmp;
-    assign inputChannel_vld = inputChannel_vld_tmp;
-    assign output_pxl_vld = output_pxl_vld_tmp;
-
-    // Logic Analyzer and other outputs (if used)
-    assign la_data_out = 128'd0;  // Example: not used here
-
-endmodule
-
-
-
-
-
 //------> /cad/mentor/2019.11/Catapult_Synthesis_10.4b-841621/Mgc_home/pkgs/siflibs/ccs_in_wait_v1.v 
 //------------------------------------------------------------------------------
 // Catapult Synthesis - Sample I/O Port Library
@@ -51294,7 +51160,7 @@ module Pathtracer (
   input [11:0] inputChannel_rsc_dat;
   input inputChannel_rsc_vld;
   output inputChannel_rsc_rdy;
-  output [23:0] output_pxl_serial_rsc_dat;
+  output [7:0] output_pxl_serial_rsc_dat;
   output output_pxl_serial_rsc_vld;
   input output_pxl_serial_rsc_rdy;
 
@@ -51318,13 +51184,43 @@ module Pathtracer (
       .output_pxl_serial_rsc_vld(output_pxl_serial_rsc_vld),
       .output_pxl_serial_rsc_rdy(output_pxl_serial_rsc_rdy)
     );
-  assign output_pxl_serial_rsc_dat = {output_pxl_serial_rsc_dat_b , output_pxl_serial_rsc_dat_g
-      , output_pxl_serial_rsc_dat_r};
+  assign output_pxl_serial_rsc_dat = output_pxl_serial_rsc_dat_b ;
 endmodule
 
 
+// module Pathtracer (
+//   clk, arst_n, inputChannel_rsc_dat, inputChannel_rsc_vld, inputChannel_rsc_rdy,
+//       output_pxl_serial_rsc_dat, output_pxl_serial_rsc_vld, output_pxl_serial_rsc_rdy
+// );
+//   input clk;
+//   input arst_n;
+//   input [11:0] inputChannel_rsc_dat;
+//   input inputChannel_rsc_dat;
+//   output inputChannel_rsc_dat;
+//   output [23:0] output_pxl_serial_rsc_dat;
+//   output output_pxl_serial_rsc_vld;
+//   input output_pxl_serial_rsc_rdy;
 
 
+//   // Interconnect Declarations
+//   wire [7:0] output_pxl_serial_rsc_dat_b;
+//   wire [7:0] output_pxl_serial_rsc_dat_g;
+//   wire [7:0] output_pxl_serial_rsc_dat_r;
 
 
-`default_nettype wire
+//   // Interconnect Declarations for Component Instantiations 
+//   Pathtracer_struct Pathtracer_struct_inst (
+//       .clk(clk),
+//       .arst_n(arst_n),
+//       .inputChannel_rsc_dat(inputChannel_rsc_dat),
+//       .inputChannel_rsc_vld(inputChannel_rsc_vld),
+//       .inputChannel_rsc_rdy(inputChannel_rsc_rdy),
+//       .output_pxl_serial_rsc_dat_b(output_pxl_serial_rsc_dat_b),
+//       .output_pxl_serial_rsc_dat_g(output_pxl_serial_rsc_dat_g),
+//       .output_pxl_serial_rsc_dat_r(output_pxl_serial_rsc_dat_r),
+//       .output_pxl_serial_rsc_vld(output_pxl_serial_rsc_vld),
+//       .output_pxl_serial_rsc_rdy(output_pxl_serial_rsc_rdy)
+//     );
+//   assign output_pxl_serial_rsc_dat = {output_pxl_serial_rsc_dat_b , output_pxl_serial_rsc_dat_g
+//       , output_pxl_serial_rsc_dat_r};
+// endmodule
