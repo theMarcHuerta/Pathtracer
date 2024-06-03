@@ -101,21 +101,119 @@ void main()
     reg_mprj_xfer = 1;
     while (reg_mprj_xfer == 1);
 
-    // Configure LA probes [31:0], [127:64] as inputs to the cpu 
-	// Configure LA probes [63:32] as outputs from the cpu
-	reg_la0_oenb = reg_la0_iena = 0x00000000;    // [31:0]
-	reg_la1_oenb = reg_la1_iena = 0xFFFFFFFF;    // [63:32]
+    // Configure LA probes [127:32] as inputs to the cpu 
+	// Configure LA probes [31:0] as outputs from the cpu
+	reg_la0_oenb = reg_la0_iena = 0xFFFFFFFF;    // [31:0]
+	reg_la1_oenb = reg_la1_iena = 0x00000000;    // [63:32]
 	reg_la2_oenb = reg_la2_iena = 0x00000000;    // [95:64]
 	reg_la3_oenb = reg_la3_iena = 0x00000000;    // [127:96]
 
 	// Flag start of the test 
 	reg_mprj_datal = 0xAB400000;
 
-	// Set Counter value to zero through LA probes [63:32]
-	reg_la1_data = 0x00000000;
+	// // Set Counter value to zero through LA probes [63:32]
+	// reg_la1_data = 0x00000000;
 
-	// Configure LA probes from [63:32] as inputs to disable counter write
-	reg_la1_oenb = reg_la1_iena = 0x00000000;    
+	/////////////////////////////////////////////////////////////
+	// write world data serially to input channel (LA probes [11:0])
+	/////////////////////////////////////////////////////////////
+
+	// very basic test with 0 quads in scene to see if output vld pulses high
+	// constant 0x3000 represents setting input valid and output ready both to 1
+
+	// write num quads
+	
+	// reg_la0_data = (0x1 | 0x3000);	// one quad
+	reg_la0_data = 0x3000;
+	reg_la0_data = 0x2000; // set input vld low
+
+	// wait for input ready signal
+	while ((reg_la1_data_in & 0x1000000) == 0x0);
+
+	// samp per pixel
+	reg_la0_data = 0x3000; // smp = 0 corresponds to 32 samp per pixel
+	reg_la0_data = 0x2000; // set input vld low
+
+	// wait for input ready signal
+	while ((reg_la1_data_in & 0x1000000) == 0x0);
+
+	// background color r
+
+	reg_la0_data = 0x3000;
+	reg_la0_data = 0x2000; // set input vld low
+
+	// wait for input ready signal
+	while ((reg_la1_data_in & 0x1000000) == 0x0);
+
+	reg_la0_data = 0x3000;
+	reg_la0_data = 0x2000; // set input vld low
+
+	// wait for input ready signal
+	while ((reg_la1_data_in & 0x1000000) == 0x0);
+
+	reg_la0_data = 0x3000;
+	reg_la0_data = 0x2000; // set input vld low
+
+	// wait for input ready signal
+	while ((reg_la1_data_in & 0x1000000) == 0x0);
+
+	// background color g
+	
+	reg_la0_data = 0x3000;
+	reg_la0_data = 0x2000; // set input vld low
+
+	// wait for input ready signal
+	while ((reg_la1_data_in & 0x1000000) == 0x0);
+
+	reg_la0_data = 0x3000;
+	reg_la0_data = 0x2000; // set input vld low
+
+	// wait for input ready signal
+	while ((reg_la1_data_in & 0x1000000) == 0x0);
+
+	reg_la0_data = 0x3000;
+	reg_la0_data = 0x2000; // set input vld low
+
+	// wait for input ready signal
+	while ((reg_la1_data_in & 0x1000000) == 0x0);
+
+	// background color b
+	
+	reg_la0_data = 0x3000;
+	reg_la0_data = 0x2000; // set input vld low
+
+	// wait for input ready signal
+	while ((reg_la1_data_in & 0x1000000) == 0x0);
+
+	reg_la0_data = 0x3000;
+	reg_la0_data = 0x2000; // set input vld low
+
+	// wait for input ready signal
+	while ((reg_la1_data_in & 0x1000000) == 0x0);
+
+	reg_la0_data = 0x3000;
+	reg_la0_data = 0x2000; // set input vld low
+
+	// wait for input ready signal
+	while ((reg_la1_data_in & 0x1000000) == 0x0);
+
+	// image height
+	reg_la0_data = (0x8 | 0x3000);	// image height = 8
+	reg_la0_data = (0x8 | 0x2000); // set input vld low
+
+	// wait for input ready signal
+	while ((reg_la1_data_in & 0x1000000) == 0x0);
+
+	// image width
+	reg_la0_data = (0x8 | 0x3000);	// image width = 8
+	reg_la0_data = (0x8 | 0x2000); // set input vld low
+
+	// wait for input ready signal
+	while ((reg_la1_data_in & 0x1000000) == 0x0);
+
+
+	// // Configure LA probes from [63:32] as inputs to disable counter write
+	// reg_la1_oenb = reg_la1_iena = 0x00000000;    
 
 	while (1) {
 		if (reg_la0_data_in > 0x1F4) {
@@ -123,8 +221,8 @@ void main()
 			break;
 		}
 	}
+	reg_mprj_datal = 0xAB410000;
 	print("\n");
 	print("Monitor: Test 1 Passed\n\n");	// Makes simulation very long!
 	reg_mprj_datal = 0xAB510000;
 }
-
